@@ -1,0 +1,16 @@
+#!/bin/bash
+
+cd /opt/spam_filter
+
+mallet="/opt/spam_filter/mallet"
+data_dir="/var/lib/spam_filter"
+
+./extract_training_features
+
+# Conver the files to mallet feature files
+echo "Converting features to Mallet vectors"
+cd $mallet
+bin/svmlight2vectors -Xmx800m --input $data_dir/training_features \
+	--output $data_dir/mallet.features
+
+rm $data_dir/training_features

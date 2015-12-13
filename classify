@@ -1,0 +1,26 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+	echo "Usage: $0 feature_file"
+	exit 1
+fi
+
+if [ ! -e "$1" ]; then
+	echo "Feature file $1 does not exist"
+	exit 1
+fi
+
+cd /opt/spam_filter/mallet
+
+output=`bin/mallet classify-svmlight --input $1 \
+	--classifier /srv/mail/filter/maxent.model --output -`
+
+ham_prob=`echo $output | awk '{print $3}'`
+spam_prob=`echo $output | awk '{print $5}'`
+
+#echo "$output"
+#echo "$ham_prob"
+#echo "$spam_prob"
+
+../compare_probabilities.py "$ham_prob" "$spam_prob"
+

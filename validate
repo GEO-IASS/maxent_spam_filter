@@ -1,0 +1,13 @@
+#!/bin/bash
+
+filter="/opt/spam_filter"
+mallet="$filter/mallet"
+
+cd $filter
+./prepare_features
+
+cd $mallet
+bin/mallet train-classifier --input /var/tmp/mallet.features --trainer MaxEnt --cross-validation 10
+
+rm /var/tmp/*features
+

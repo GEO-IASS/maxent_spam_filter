@@ -1,0 +1,24 @@
+#!/bin/bash
+
+filter="/opt/spam_filter"
+mallet="$filter/mallet"
+data_dir="/var/lib/spam_filter"
+
+cd $filter
+./prepare_features
+
+cd $mallet
+bin/mallet train-classifier \
+	--input $data_dir/mallet.features \
+	--output-classifier $data_dir/maxent.model.new \
+	--trainer MaxEnt
+
+# Rename the new files to override the old ones
+mv $data_dir/maxent.model.new $data_dir/maxent.model
+mv $data_dir/vectors.new $data_dir/vectors
+
+# Change the permissions of the file
+chown vmail:vmail $data_dir/maxent.model $data_dir/vectors
+
+# Remove the training features
+rm $data_dir/mallet.features

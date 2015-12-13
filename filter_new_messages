@@ -1,0 +1,60 @@
+#!/bin/bash
+
+# Go to the filter directory
+cd /opt/spam_filter
+
+# Exit if we are training
+if [ -e "/var/tmp/training_now" ]; then
+	exit
+fi
+
+# Define the accounts that will be filtered
+accounts=`cat accounts`
+
+# Define the number of days to check
+days="1"
+
+# Define the directory where the features are kept and the message list is kept
+list="/srv/mail/filter/messages"
+
+# Go through each account
+date
+for account in $accounts; do
+	echo "Looking for new messages in $account"
+
+	for file in `find /srv/mail/$account/cur -type f -ctime -$days`; do
+		# See if the message has been read (status flags in the name)
+		case "`basename $file`" in
+			*,S=[0-9]*:*S )
+				continue
+				;;
+		esac
+
+		# Get the name of the file
+		name=`basename $file | cut -d , -f 1`
+
+		# See if the message has already been used
+		grep -q "$name" $list;
+		if [ $? -eq 0 ]; then
+			continue
+		fi
+
+		echo $name >> $list
+		echo -n "  Testing $name: "
+
+		# Extract the features from this message
+		rm -f /var/tmp/tmp_message
+		echo $file | ./extract_features.py ham /var/tmp/tmp_message
+
+		# See what the file is
+		result=`./classify /var/tmp/tmp_message`
+		rm -f /var/tmp/tmp_message
+		echo $result
+
+		if [ "$result" == "spam" ]; then
+			# Move the actual email to the spam directory
+			mv "$file" "/srv/mail/$account/.Spam/cur"
+		fi
+	done
+done
+
